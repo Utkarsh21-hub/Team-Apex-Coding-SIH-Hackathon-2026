@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { dataStore } from '../../lib/dataStore';
@@ -13,8 +13,10 @@ import {
   Menu,
   ChevronDown,
   Sparkles,
+  Database,
 } from 'lucide-react';
 import { UserRole } from '../../types';
+import { SupabaseStatusModal } from '../common/SupabaseStatusModal';
 
 interface NavbarProps {
   onOpenSearch: () => void;
@@ -26,6 +28,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onToggleSidebar })
   const navigate = useNavigate();
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showSupabaseModal, setShowSupabaseModal] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState(() => dataStore.getSupabaseStatus());
+
+  useEffect(() => {
+    const unsub = dataStore.subscribe(() => {
+      setSupabaseStatus(dataStore.getSupabaseStatus());
+    });
+    return unsub;
+  }, []);
 
   const notifications = user ? dataStore.getNotifications(user.id) : [];
   const unreadCount = notifications.filter((n) => !n.read_at).length;
@@ -159,6 +170,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onToggleSidebar })
               )}
             </div>
 
+            {/* Supabase Database Status Trigger */}
+            <button
+              id="supabase-status-trigger"
+              onClick={() => setShowSupabaseModal(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-slate-200 transition-colors cursor-pointer"
+              title={`Supabase Database: ${supabaseStatus.message}`}
+            >
+              <Database className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden sm:inline text-[11px] font-medium text-slate-300">Supabase</span>
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  supabaseStatus.hasTables
+                    ? 'bg-emerald-400 animate-pulse'
+                    : supabaseStatus.isConnected
+                    ? 'bg-amber-400'
+                    : 'bg-rose-400'
+                }`}
+              />
+            </button>
+
             {/* Notifications Bell */}
             <Link
               to="/notifications"
@@ -231,6 +262,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenSearch, onToggleSidebar })
           </div>
         </div>
       </div>
+
+      <SupabaseStatusModal
+        isOpen={showSupabaseModal}
+        onClose={() => setShowSupabaseModal(false)}
+      />
     </header>
   );
 };

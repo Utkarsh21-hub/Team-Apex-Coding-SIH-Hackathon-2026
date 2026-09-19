@@ -7,6 +7,13 @@ import {
   AppNotification,
   INSTRUMENT_VALIDITY_MONTHS,
 } from '../types';
+import {
+  supabase,
+  isSupabaseConfigured,
+  checkSupabaseHealth,
+  seedSupabaseTables,
+  SupabaseHealthStatus,
+} from './supabase';
 
 const STORAGE_KEYS = {
   PROFILES: 'verifymetro_profiles_v1',
@@ -176,7 +183,7 @@ export const DEMO_APPLICATIONS: Application[] = [
     applicant_id: 'usr-applicant-1',
     type: 're-verification',
     status: 'submitted',
-    submitted_at: '2026-09-01T09:15:00Z', // 4 days ago
+    submitted_at: '2026-09-01T09:15:00Z',
     supporting_document_urls: [
       'https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80',
     ],
@@ -229,7 +236,7 @@ export const DEMO_CERTIFICATES: Certificate[] = [
     certificate_number: 'IND-LM-2025-0482',
     qr_code_data: '/verify/IND-LM-2025-0482',
     issue_date: '2025-02-15',
-    expiry_date: '2027-02-14', // Valid active
+    expiry_date: '2027-02-14',
     status: 'active',
     issuing_officer_name: 'S. K. Sharma (Inspector LM-II)',
     issuing_authority: 'Legal Metrology Department, Govt. of Gujarat',
@@ -242,7 +249,7 @@ export const DEMO_CERTIFICATES: Certificate[] = [
     certificate_number: 'IND-LM-2025-1190',
     qr_code_data: '/verify/IND-LM-2025-1190',
     issue_date: '2025-09-28',
-    expiry_date: '2026-09-27', // Expiring in ~22 days from Sept 5, 2026!
+    expiry_date: '2026-09-27',
     status: 'active',
     issuing_officer_name: 'S. K. Sharma (Inspector LM-II)',
     issuing_authority: 'Legal Metrology Department, Govt. of Gujarat',
@@ -333,7 +340,14 @@ export const DEMO_NOTIFICATIONS: AppNotification[] = [
   },
 ];
 
-// In-memory + LocalStorage cache engine
+// Helper to safely execute background queries on Postgrest
+function fireAndForget(promiseLike: PromiseLike<unknown>) {
+  Promise.resolve(promiseLike).catch((err) => {
+    console.warn('Supabase sync warning:', err);
+  });
+}
+
+// In-memory + LocalStorage cache engine with Supabase integration
 class DataStore {
   private profiles: UserProfile[] = [];
   private instruments: Instrument[] = [];
@@ -342,9 +356,187 @@ class DataStore {
   private certificates: Certificate[] = [];
   private notifications: AppNotification[] = [];
   private currentUserId: string = 'usr-applicant-1';
+  private supabaseStatus: SupabaseHealthStatus = {
+    isConfigured: isSupabaseConfigured,
+    isConnected: false,
+    hasTables: false,
+    message: isSupabaseConfigured ? 'Connecting to Supabase...' : 'Supabase credentials not configured',
+  };
+  private listeners: Array<() => void> = [];
 
   constructor() {
     this.loadFromStorage();
+    if (isSupabaseConfigured) {
+      this.initSupabaseSync();
+    }
+  }
+
+  public subscribe(listener: () => void): () => void {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
+  private notify() {
+    this.listeners.forEach((l) => {
+      try {
+        l();
+      } catch (e) {
+        console.error('DataStore subscriber error:', e);
+      }
+    });
+  }
+
+  public getSupabaseStatus(): SupabaseHealthStatus {
+    return this.supabaseStatus;
+  }
+
+  /**
+   * Initializes synchronization with Supabase
+   */
+  public async initSupabaseSync(): Promise<SupabaseHealthStatus> {
+    if (!isSupabaseConfigured || !supabase) {
+      return this.supabaseStatus;
+    }
+
+    try {
+      const status = await checkSupabaseHealth();
+      this.supabaseStatus = status;
+
+      if (status.hasTables) {
+        // Fetch profiles
+        const { data: pData } = await supabase.from('profiles').select('*');
+        if (pData && pData.length > 0) {
+          this.profiles = pData.map((p) => ({
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            phone: p.phone || '',
+            role: p.role,
+            organization: p.organization || '',
+            address: p.address || '',
+            designation: p.designation,
+            isActive: p.is_active ?? true,
+            createdAt: p.created_at || new Date().toISOString(),
+          }));
+        }
+
+        // Fetch instruments
+        const { data: iData } = await supabase.from('instruments').select('*');
+        if (iData && iData.length > 0) {
+          this.instruments = iData.map((i) => ({
+            id: i.id,
+            owner_id: i.owner_id,
+            instrument_type: i.instrument_type,
+            make: i.make,
+            model: i.model,
+            serial_number: i.serial_number,
+            capacity: i.capacity,
+            accuracy_class: i.accuracy_class,
+            location: i.location,
+            registered_at: i.registered_at,
+          }));
+        }
+
+        // Fetch applications
+        const { data: aData } = await supabase.from('applications').select('*');
+        if (aData && aData.length > 0) {
+          this.applications = aData.map((a) => ({
+            id: a.id,
+            instrument_id: a.instrument_id,
+            applicant_id: a.applicant_id,
+            type: a.type,
+            status: a.status,
+            assigned_officer_id: a.assigned_officer_id,
+            assigned_gatc_id: a.assigned_gatc_id,
+            submitted_at: a.submitted_at,
+            scheduled_date: a.scheduled_date,
+            supporting_document_urls: a.supporting_document_urls || [],
+            photo_urls: a.photo_urls || [],
+            applicant_notes: a.applicant_notes,
+            rejection_reason: a.rejection_reason,
+          }));
+        }
+
+        // Fetch certificates
+        const { data: cData } = await supabase.from('certificates').select('*');
+        if (cData && cData.length > 0) {
+          this.certificates = cData.map((c) => ({
+            id: c.id,
+            application_id: c.application_id,
+            certificate_number: c.certificate_number,
+            qr_code_data: c.qr_code_data,
+            issue_date: c.issue_date,
+            expiry_date: c.expiry_date,
+            status: c.status,
+            issuing_officer_name: c.issuing_officer_name,
+            issuing_authority: c.issuing_authority,
+            verification_fee_receipt: c.verification_fee_receipt,
+            seal_identification_tag: c.seal_identification_tag,
+            pdf_url: c.pdf_url,
+          }));
+        }
+
+        // Fetch verification records
+        const { data: rData } = await supabase.from('verification_records').select('*');
+        if (rData && rData.length > 0) {
+          this.verificationRecords = rData.map((r) => ({
+            id: r.id,
+            application_id: r.application_id,
+            officer_id: r.officer_id,
+            verification_date: r.verification_date,
+            observations: r.observations || {},
+            result: r.result,
+            remarks: r.remarks || '',
+            certificate_id: r.certificate_id,
+          }));
+        }
+
+        // Fetch notifications
+        const { data: nData } = await supabase.from('notifications').select('*');
+        if (nData && nData.length > 0) {
+          this.notifications = nData.map((n) => ({
+            id: n.id,
+            user_id: n.user_id,
+            title: n.title,
+            message: n.message,
+            type: n.type,
+            read_at: n.read_at,
+            created_at: n.created_at,
+            link: n.link,
+          }));
+        }
+
+        this.saveAll();
+      }
+
+      this.notify();
+      return this.supabaseStatus;
+    } catch (err) {
+      console.warn('Supabase sync warning:', err);
+      this.notify();
+      return this.supabaseStatus;
+    }
+  }
+
+  /**
+   * Seeds the Supabase database with the current sample dataset
+   */
+  public async seedSupabase(): Promise<{ success: boolean; message: string; error?: string }> {
+    const res = await seedSupabaseTables({
+      profiles: this.profiles,
+      instruments: this.instruments,
+      applications: this.applications,
+      certificates: this.certificates,
+      verificationRecords: this.verificationRecords,
+      notifications: this.notifications,
+    });
+
+    if (res.success) {
+      await this.initSupabaseSync();
+    }
+    return res;
   }
 
   private loadFromStorage() {
@@ -383,6 +575,7 @@ class DataStore {
     this.notifications = [...DEMO_NOTIFICATIONS];
     this.currentUserId = 'usr-applicant-1';
     this.saveAll();
+    this.notify();
   }
 
   private saveAll() {
@@ -423,6 +616,25 @@ class DataStore {
     };
     this.profiles.push(newProfile);
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(
+        supabase.from('profiles').insert([{
+          id: newProfile.id,
+          name: newProfile.name,
+          email: newProfile.email,
+          phone: newProfile.phone,
+          role: newProfile.role,
+          organization: newProfile.organization,
+          address: newProfile.address,
+          designation: newProfile.designation,
+          is_active: newProfile.isActive,
+          created_at: newProfile.createdAt,
+        }])
+      );
+    }
+
     return newProfile;
   }
 
@@ -431,6 +643,24 @@ class DataStore {
     if (idx === -1) return null;
     this.profiles[idx] = { ...this.profiles[idx], ...updates };
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      const u = this.profiles[idx];
+      fireAndForget(
+        supabase.from('profiles').update({
+          name: u.name,
+          email: u.email,
+          phone: u.phone,
+          role: u.role,
+          organization: u.organization,
+          address: u.address,
+          designation: u.designation,
+          is_active: u.isActive,
+        }).eq('id', id)
+      );
+    }
+
     return this.profiles[idx];
   }
 
@@ -439,6 +669,12 @@ class DataStore {
     if (!user) return null;
     user.isActive = !user.isActive;
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(supabase.from('profiles').update({ is_active: user.isActive }).eq('id', id));
+    }
+
     return user;
   }
 
@@ -462,6 +698,25 @@ class DataStore {
     };
     this.instruments.unshift(newInst);
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(
+        supabase.from('instruments').insert([{
+          id: newInst.id,
+          owner_id: newInst.owner_id,
+          instrument_type: newInst.instrument_type,
+          make: newInst.make,
+          model: newInst.model,
+          serial_number: newInst.serial_number,
+          capacity: newInst.capacity,
+          accuracy_class: newInst.accuracy_class,
+          location: newInst.location,
+          registered_at: newInst.registered_at,
+        }])
+      );
+    }
+
     return newInst;
   }
 
@@ -505,6 +760,27 @@ class DataStore {
     });
 
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(
+        supabase.from('applications').insert([{
+          id: newApp.id,
+          instrument_id: newApp.instrument_id,
+          applicant_id: newApp.applicant_id,
+          type: newApp.type,
+          status: newApp.status,
+          assigned_officer_id: newApp.assigned_officer_id || null,
+          assigned_gatc_id: newApp.assigned_gatc_id || null,
+          submitted_at: newApp.submitted_at,
+          scheduled_date: newApp.scheduled_date || null,
+          supporting_document_urls: newApp.supporting_document_urls || [],
+          photo_urls: newApp.photo_urls || [],
+          applicant_notes: newApp.applicant_notes || null,
+        }])
+      );
+    }
+
     return newApp;
   }
 
@@ -513,6 +789,12 @@ class DataStore {
     if (idx === -1) return null;
     this.applications[idx] = { ...this.applications[idx], ...updates };
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(supabase.from('applications').update(updates).eq('id', id));
+    }
+
     return this.applications[idx];
   }
 
@@ -597,6 +879,24 @@ class DataStore {
         type: 'status_update',
         link: `/certificates`,
       });
+
+      if (supabase) {
+        fireAndForget(
+          supabase.from('certificates').insert([{
+            id: certificate.id,
+            application_id: certificate.application_id,
+            certificate_number: certificate.certificate_number,
+            qr_code_data: certificate.qr_code_data,
+            issue_date: certificate.issue_date,
+            expiry_date: certificate.expiry_date,
+            status: certificate.status,
+            issuing_officer_name: certificate.issuing_officer_name,
+            issuing_authority: certificate.issuing_authority,
+            verification_fee_receipt: certificate.verification_fee_receipt,
+            seal_identification_tag: certificate.seal_identification_tag,
+          }])
+        );
+      }
     } else {
       // Mark as rejected
       this.updateApplication(app.id, {
@@ -626,6 +926,22 @@ class DataStore {
 
     this.verificationRecords.unshift(record);
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(
+        supabase.from('verification_records').insert([{
+          id: record.id,
+          application_id: record.application_id,
+          officer_id: record.officer_id,
+          verification_date: record.verification_date,
+          observations: record.observations,
+          result: record.result,
+          remarks: record.remarks,
+          certificate_id: record.certificate_id || null,
+        }])
+      );
+    }
 
     return { record, certificate };
   }
@@ -643,7 +959,6 @@ class DataStore {
   }
 
   public getCertificatesForUser(userId: string): Certificate[] {
-    // Find all applications belonging to this applicant
     const userApps = this.applications.filter((a) => a.applicant_id === userId).map((a) => a.id);
     return this.certificates.filter((c) => userApps.includes(c.application_id));
   }
@@ -694,6 +1009,23 @@ class DataStore {
     };
     this.notifications.unshift(newNotif);
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(
+        supabase.from('notifications').insert([{
+          id: newNotif.id,
+          user_id: newNotif.user_id,
+          title: newNotif.title,
+          message: newNotif.message,
+          type: newNotif.type,
+          read_at: newNotif.read_at,
+          created_at: newNotif.created_at,
+          link: newNotif.link || null,
+        }])
+      );
+    }
+
     return newNotif;
   }
 
@@ -702,6 +1034,11 @@ class DataStore {
     if (n) {
       n.read_at = new Date().toISOString();
       this.saveAll();
+      this.notify();
+
+      if (supabase) {
+        fireAndForget(supabase.from('notifications').update({ read_at: n.read_at }).eq('id', id));
+      }
     }
   }
 
@@ -712,6 +1049,11 @@ class DataStore {
       }
     });
     this.saveAll();
+    this.notify();
+
+    if (supabase) {
+      fireAndForget(supabase.from('notifications').update({ read_at: new Date().toISOString() }).eq('user_id', userId));
+    }
   }
 
   // --- Expiry check helper (30 days threshold) ---
