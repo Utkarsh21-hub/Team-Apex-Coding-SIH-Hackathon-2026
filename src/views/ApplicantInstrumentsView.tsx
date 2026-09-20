@@ -14,6 +14,7 @@ import {
   ExternalLink,
   ShieldCheck,
   ShieldAlert,
+  Crosshair,
 } from 'lucide-react';
 
 export const ApplicantInstrumentsView: React.FC = () => {
@@ -152,6 +153,12 @@ export const ApplicantInstrumentsView: React.FC = () => {
                       <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
                       <span className="line-clamp-1">{inst.location}</span>
                     </div>
+                    {inst.latitude != null && inst.longitude != null && (
+                      <div className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded flex items-center gap-1 font-mono font-medium mt-1">
+                        <Crosshair className="w-3 h-3 text-emerald-600 shrink-0" />
+                        <span>GPS: {inst.latitude.toFixed(4)}° N, {inst.longitude.toFixed(4)}° E {inst.pincode ? `(PIN: ${inst.pincode})` : ''}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

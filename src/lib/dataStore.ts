@@ -1267,21 +1267,39 @@ class DataStore {
 
     if (supabase) {
       fireAndForget(
-        supabase.from('instruments').insert([{
-          id: newInst.id,
-          owner_id: newInst.owner_id,
-          instrument_type: newInst.instrument_type,
-          make: newInst.make,
-          model: newInst.model,
-          serial_number: newInst.serial_number,
-          capacity: newInst.capacity,
-          accuracy_class: newInst.accuracy_class,
-          location: newInst.location,
-          registered_at: newInst.registered_at,
-          latitude: newInst.latitude ?? null,
-          longitude: newInst.longitude ?? null,
-          pincode: newInst.pincode ?? null,
-        }])
+        supabase
+          .from('instruments')
+          .insert([{
+            id: newInst.id,
+            owner_id: newInst.owner_id,
+            instrument_type: newInst.instrument_type,
+            make: newInst.make,
+            model: newInst.model,
+            serial_number: newInst.serial_number,
+            capacity: newInst.capacity,
+            accuracy_class: newInst.accuracy_class,
+            location: newInst.location,
+            registered_at: newInst.registered_at,
+            latitude: newInst.latitude ?? null,
+            longitude: newInst.longitude ?? null,
+            pincode: newInst.pincode ?? null,
+          }])
+          .then(async ({ error }) => {
+            if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+              await supabase.from('instruments').insert([{
+                id: newInst.id,
+                owner_id: newInst.owner_id,
+                instrument_type: newInst.instrument_type,
+                make: newInst.make,
+                model: newInst.model,
+                serial_number: newInst.serial_number,
+                capacity: newInst.capacity,
+                accuracy_class: newInst.accuracy_class,
+                location: newInst.location,
+                registered_at: newInst.registered_at,
+              }]);
+            }
+          })
       );
     }
 

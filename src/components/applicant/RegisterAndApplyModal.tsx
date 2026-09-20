@@ -12,7 +12,11 @@ import {
   CheckCircle2,
   AlertCircle,
   FileCheck,
+  MapPin,
+  Crosshair,
+  Loader2,
 } from 'lucide-react';
+import { geocodePincode } from '../../lib/gisService';
 
 interface RegisterAndApplyModalProps {
   isOpen: boolean;
@@ -42,6 +46,66 @@ export const RegisterAndApplyModal: React.FC<RegisterAndApplyModalProps> = ({
   const [capacity, setCapacity] = useState('');
   const [accuracyClass, setAccuracyClass] = useState('Class III (Medium)');
   const [location, setLocation] = useState(user?.address || '');
+  const [pincode, setPincode] = useState(() => {
+    const match = user?.address?.match(/\b(\d{6})\b/);
+    return match ? match[1] : '';
+  });
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
+  const [gpsSuccess, setGpsSuccess] = useState<string | null>(null);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  // Handle one-click device GPS capture
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsError('Geolocation is not supported by your browser or environment.');
+      return;
+    }
+
+    setIsLocating(true);
+    setGpsError(null);
+    setGpsSuccess(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const accuracy = Math.round(pos.coords.accuracy);
+
+        setLatitude(lat.toFixed(6));
+        setLongitude(lng.toFixed(6));
+        setIsLocating(false);
+        setGpsSuccess(`GPS captured: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (±${accuracy}m accuracy)`);
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === 1) {
+          setGpsError('Location access was denied. You can enter PIN code or coordinates manually.');
+        } else if (err.code === 2) {
+          setGpsError('GPS position unavailable. Please enter PIN code or coordinates manually.');
+        } else {
+          setGpsError('GPS request timed out. Please enter PIN code or coordinates manually.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
+
+  // Handle PIN code lookup to auto-populate coordinates if blank
+  const handlePincodeChange = async (val: string) => {
+    setPincode(val);
+    const cleaned = val.trim().replace(/\s+/g, '');
+    if (/^\d{6}$/.test(cleaned)) {
+      const res = await geocodePincode(cleaned);
+      if (res && (!latitude || !longitude)) {
+        setLatitude(res.lat.toFixed(6));
+        setLongitude(res.lng.toFixed(6));
+        setGpsSuccess(`Coordinates loaded from Postal Code ${cleaned} (${res.areaName || res.city})`);
+        setGpsError(null);
+      }
+    }
+  };
 
   // Application Fields
   const [appType, setAppType] = useState<ApplicationType>('new');
@@ -97,6 +161,25 @@ export const RegisterAndApplyModal: React.FC<RegisterAndApplyModalProps> = ({
         return;
       }
 
+      // Format and validate GIS coordinates
+      const cleanPincode = pincode.trim().replace(/\s+/g, '');
+      const parsedLat = latitude.trim() ? parseFloat(latitude.trim()) : undefined;
+      const parsedLng = longitude.trim() ? parseFloat(longitude.trim()) : undefined;
+
+      let fullLocation = location.trim() || user.address || 'Commercial Site';
+      if (cleanPincode && !fullLocation.includes(cleanPincode)) {
+        fullLocation += `, PIN: ${cleanPincode}`;
+      }
+      if (
+        parsedLat != null &&
+        !isNaN(parsedLat) &&
+        parsedLng != null &&
+        !isNaN(parsedLng) &&
+        !fullLocation.includes('Lat:')
+      ) {
+        fullLocation += ` (Lat: ${parsedLat}, Lng: ${parsedLng})`;
+      }
+
       // Register new instrument
       const newInst = dataStore.addInstrument({
         owner_id: user.id,
@@ -106,7 +189,10 @@ export const RegisterAndApplyModal: React.FC<RegisterAndApplyModalProps> = ({
         serial_number: serialNumber,
         capacity,
         accuracy_class: accuracyClass,
-        location: location || user.address || 'Commercial Site',
+        location: fullLocation,
+        latitude: parsedLat != null && !isNaN(parsedLat) ? parsedLat : undefined,
+        longitude: parsedLng != null && !isNaN(parsedLng) ? parsedLng : undefined,
+        pincode: cleanPincode || undefined,
       });
       instrumentId = newInst.id;
     } else {
@@ -320,7 +406,7 @@ export const RegisterAndApplyModal: React.FC<RegisterAndApplyModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Accuracy Classification
@@ -336,17 +422,109 @@ export const RegisterAndApplyModal: React.FC<RegisterAndApplyModalProps> = ({
                     <option value="Class IV (Ordinary Accuracy)">Class IV (Ordinary Accuracy)</option>
                   </select>
                 </div>
+              </div>
+
+              {/* GIS & Installation Location Coordinates */}
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                      Physical Installation & GIS Coordinates
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Exact machine coordinates used for Legal Metrology GIS verification and radius mapping.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleGetCurrentLocation}
+                    disabled={isLocating}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                  >
+                    {isLocating ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Crosshair className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isLocating ? 'Detecting GPS...' : '📍 Use My Current Location'}</span>
+                  </button>
+                </div>
+
+                {/* GPS Status feedback */}
+                {gpsSuccess && (
+                  <div className="p-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] rounded-lg flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>{gpsSuccess}</span>
+                  </div>
+                )}
+                {gpsError && (
+                  <div className="p-2 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] rounded-lg flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>{gpsError}</span>
+                  </div>
+                )}
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Physical Installation Location
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                    Premises / Site Address
                   </label>
                   <input
                     type="text"
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
-                    placeholder="Installation site or vehicle reg no."
-                    className="w-full px-3 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    placeholder="Shop/Warehouse address, Counter No., Fuel Bay or Vehicle Reg. No."
+                    className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Postal PIN Code
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={pincode}
+                      onChange={(e) => handlePincodeChange(e.target.value)}
+                      placeholder="e.g. 110001"
+                      className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Latitude (° N)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={latitude}
+                      onChange={(e) => {
+                        setLatitude(e.target.value);
+                        setGpsSuccess(null);
+                      }}
+                      placeholder="e.g. 28.632845"
+                      className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                      Longitude (° E)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={longitude}
+                      onChange={(e) => {
+                        setLongitude(e.target.value);
+                        setGpsSuccess(null);
+                      }}
+                      placeholder="e.g. 77.219520"
+                      className="w-full px-3 py-1.5 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

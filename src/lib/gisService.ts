@@ -321,3 +321,5 @@ export async function geocodePincode(rawPincode: string): Promise<GeoLocationRes
 
   return null;
 }
+
+export const lookupPincode = geocodePincode;
