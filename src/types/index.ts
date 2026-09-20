@@ -33,6 +33,9 @@ export interface Instrument {
   location: string;           // Physical installation address / GPS reference
   accuracy_class?: string;    // Class I (Special), Class II (High), Class III (Medium), Class IV (Ordinary)
   registered_at: string;
+  latitude?: number;          // Geo coordinate latitude
+  longitude?: number;         // Geo coordinate longitude
+  pincode?: string;           // Indian 6-digit postal code
 }
 
 export type ApplicationType = 'new' | 're-verification';
@@ -96,7 +99,11 @@ export interface Certificate {
   seal_identification_tag?: string;
 }
 
-export type NotificationType = 'expiry_alert' | 'status_update' | 'assignment_alert';
+export type NotificationType =
+  | 'expiry_alert'
+  | 'status_update'
+  | 'assignment_alert'
+  | 'action_required';
 
 export interface AppNotification {
   id: string;
@@ -129,3 +136,37 @@ export const INSTRUMENT_TYPE_LABELS: Record<InstrumentType, string> = {
   storage_tank_flowmeter: 'Bulk Flow Meter & Storage Tank',
   automatic_gravimetric: 'Automatic Gravimetric Filling Instrument',
 };
+
+// --- GIS & Enforcement Raid Types ---
+export type EnforcementStatus = 'ACTIVE' | 'EXPIRING_SOON' | 'EXPIRED' | 'UNDER_VERIFICATION';
+
+export interface GisInstrumentMarker {
+  instrument: Instrument;
+  business: {
+    name: string;
+    organization: string;
+    address: string;
+    phone?: string;
+    email?: string;
+  };
+  latestApplication?: Application;
+  certificate?: Certificate;
+  status: EnforcementStatus;
+  daysUntilExpiry?: number;
+  distanceKm?: number;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface PlannedRaidInspectionInput {
+  instrumentId: string;
+  officerId: string;
+  scheduledDate: string;
+  inspectionType: 'raid' | 'statutory_reverification';
+  priority: 'urgent' | 'high' | 'routine';
+  notes?: string;
+  teamMembers?: string;
+}
+

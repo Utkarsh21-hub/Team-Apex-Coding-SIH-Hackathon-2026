@@ -41,6 +41,9 @@ CREATE TABLE public.instruments (
   capacity TEXT NOT NULL,
   accuracy_class TEXT,
   location TEXT NOT NULL,
+  pincode TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   registered_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -136,7 +139,9 @@ VALUES
   ('usr-applicant-1', 'Ramesh Patel', 'ramesh.patel@maadurgatrading.in', '+91 98250 11420', 'applicant', 'Maa Durga Trading & Logistics', 'Plot 42, GIDC Phase II, Naroda, Ahmedabad, Gujarat 382330', 'Proprietor & Weighbridge Operator', true, '2025-01-15T09:00:00Z'),
   ('usr-lmo-1', 'S. K. Sharma', 'sk.sharma@legalmetrology.gov.in', '+91 94140 88219', 'lmo', 'Legal Metrology Department, Inspectorate Zone-II', 'Metrology Bhavan, Near Civil Hospital, Ring Road, District Metrology Office', 'Senior Legal Metrology Inspector (Gazetted)', true, '2024-03-10T10:00:00Z'),
   ('usr-gatc-1', 'Dr. Ananya Sen', 'ananya.sen@gatclab.org.in', '+91 98301 44552', 'gatc', 'National Calibration & Legal Metrology Test Centre (GATC #07)', 'NABL Accredited Calibration Facility, Sector V, Salt Lake, Kolkata 700091', 'Head of Calibration Services & Authorized Signatory', true, '2024-06-01T11:00:00Z'),
-  ('usr-admin-1', 'Vikramaditya Joshi', 'admin.joshi@legalmetrology.gov.in', '+91 98100 55210', 'admin', 'Office of the Controller of Legal Metrology, State Directorate', 'Directorate of Legal Metrology, Secretariat Complex, Administrative Block B', 'Joint Controller of Legal Metrology / System Administrator', true, '2024-01-01T08:00:00Z')
+  ('usr-admin-1', 'Vikramaditya Joshi', 'admin.joshi@legalmetrology.gov.in', '+91 98100 55210', 'admin', 'Office of the Controller of Legal Metrology, State Directorate', 'Directorate of Legal Metrology, Secretariat Complex, Administrative Block B', 'Joint Controller of Legal Metrology / System Administrator', true, '2024-01-01T08:00:00Z'),
+  ('usr-applicant-delhi-cp', 'Rajesh Chawla', 'chawla.jewellers@connaughtplace.in', '+91 98110 44291', 'applicant', 'Chawla Bullion & Gems Jewellers', 'Shop 18, Block C, Inner Circle, Connaught Place, New Delhi 110001', 'Proprietor & Bullion Dealer', true, '2024-02-15T09:00:00Z'),
+  ('usr-applicant-delhi-cp2', 'Sardar Manjit Singh', 'janpath.logistics@delhi.in', '+91 98101 77334', 'applicant', 'Janpath Commercial Fuels & Logistics', 'Fuel Bay 2, Near Tolstoy Marg Crossing, Janpath, Connaught Place, New Delhi 110001', 'Managing Partner', true, '2024-03-01T10:00:00Z')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Instruments
@@ -146,7 +151,10 @@ VALUES
   ('inst-002', 'usr-applicant-1', 'weighbridge_heavy', 'Avery Weigh-Tronix', 'BridgeMont Pitless Heavy Truck Scale', 'AVT-WB-50T-992', '50 MT (Metric Tonnes), e = 10 kg', 'Class III (Medium)', 'Gate No. 1, Logistics Inward Terminal, Naroda Yard', '2024-09-20T14:15:00Z'),
   ('inst-003', 'usr-applicant-1', 'fuel_dispenser', 'Tokheim / Gilbarco Veeder-Root', 'Encore 500S Multi-Product Dispenser', 'GVR-FD-2023-412', 'Flow Rate: 45 L/min, Dual Nozzle HSD/MS', 'Accuracy Class 0.5 (±0.5% MPE)', 'Highway Fuel Station Bay 03, Ring Road Branch', '2025-08-12T09:45:00Z'),
   ('inst-004', 'usr-applicant-1', 'taximeter', 'Pulsar Digital Systems', 'SpeedoFare TX-9 Electronic Fare Meter', 'PUL-TX-2024-118', 'Pulse constant: 4000 pulses/km, GPS synchronized', 'Class I Electronic Fare Meter', 'Commercial Fleet Vehicle GJ-01-AX-9912', '2025-04-05T16:20:00Z'),
-  ('inst-005', 'usr-applicant-1', 'moisture_meter', 'Dickey-John Agri-Tech', 'GAC 2500-UGMA Grain Moisture Analyzer', 'DJ-MM-2025-007', 'Moisture Range: 5% - 45%, Accuracy ±0.1%', 'Grade A Grain Inspector Meter', 'Agricultural Commodities Mandi Inspection Shed', '2025-07-18T10:00:00Z')
+  ('inst-005', 'usr-applicant-1', 'moisture_meter', 'Dickey-John Agri-Tech', 'GAC 2500-UGMA Grain Moisture Analyzer', 'DJ-MM-2025-007', 'Moisture Range: 5% - 45%, Accuracy ±0.1%', 'Grade A Grain Inspector Meter', 'Agricultural Commodities Mandi Inspection Shed', '2025-07-18T10:00:00Z'),
+  -- Non-compliant machines in Connaught Place 110001 (within 5km radius)
+  ('inst-cp-001', 'usr-applicant-delhi-cp', 'weighing_scale_non_auto', 'Mettler Toledo', 'ME204T Analytical Precision Bullion Balance', 'MT-CP-2023-8812', '220 g (Max) / 10 mg (Min), e = 1 mg, d = 0.1 mg', 'Class II (High)', 'Bullion Sales Counter, Block C, Inner Circle, Connaught Place, New Delhi 110001 (Lat: 28.6328, Lng: 77.2195, Pincode: 110001)', '2024-02-20T10:00:00Z'),
+  ('inst-cp-002', 'usr-applicant-delhi-cp2', 'fuel_dispenser', 'Wayne Fueling Systems', 'Century Commercial Dual High-Speed Dispenser', 'WYN-DL-CP-4412', 'Flow Rate: 45 L/min (Dual Nozzle HSD/MS)', 'Accuracy Class 0.5 (±0.5% MPE)', 'Commercial Fuel Bay 2, Janpath Road, Connaught Place, New Delhi 110001 (Lat: 28.6265, Lng: 77.2188, Pincode: 110001)', '2024-03-05T11:00:00Z')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Applications
@@ -156,21 +164,26 @@ VALUES
   ('app-2025-002', 'inst-002', 'usr-applicant-1', 're-verification', 'verified', 'usr-lmo-1', NULL, '2025-09-22T08:30:00Z', '2025-09-28T14:00:00Z', ARRAY['https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80'], ARRAY['https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=600&auto=format&fit=crop&q=80'], 'Annual mandatory calibration for 50MT weighbridge.'),
   ('app-2026-003', 'inst-003', 'usr-applicant-1', 're-verification', 'submitted', NULL, NULL, '2026-09-01T09:15:00Z', NULL, ARRAY['https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80'], ARRAY['https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=600&auto=format&fit=crop&q=80'], 'Due for periodic calibration before festive season high volume.'),
   ('app-2026-004', 'inst-004', 'usr-applicant-1', 'new', 'scheduled', 'usr-lmo-1', NULL, '2026-09-02T11:40:00Z', '2026-09-08T11:00:00Z', ARRAY['https://images.unsplash.com/photo-1554224154-26032ffc0d07?w=600&auto=format&fit=crop&q=80'], ARRAY['https://images.unsplash.com/photo-1549465220-1a8b9238cd48?w=600&auto=format&fit=crop&q=80'], 'New taxi fare meter fitted as per RTO guidelines.'),
-  ('app-2026-005', 'inst-005', 'usr-applicant-1', 'new', 'in-progress', NULL, 'usr-gatc-1', '2026-08-28T14:20:00Z', '2026-09-06T15:00:00Z', ARRAY['https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80'], ARRAY['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80'], 'Lab precision test required at GATC test bed.')
+  ('app-2026-005', 'inst-005', 'usr-applicant-1', 'new', 'in-progress', NULL, 'usr-gatc-1', '2026-08-28T14:20:00Z', '2026-09-06T15:00:00Z', ARRAY['https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop&q=80'], ARRAY['https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=600&auto=format&fit=crop&q=80'], 'Lab precision test required at GATC test bed.'),
+  ('app-cp-001', 'inst-cp-001', 'usr-applicant-delhi-cp', 're-verification', 'verified', 'usr-lmo-1', NULL, '2024-02-22T10:00:00Z', '2024-02-28T11:00:00Z', ARRAY[]::TEXT[], ARRAY[]::TEXT[], 'Annual verification of high-precision bullion balance at Connaught Place showroom.'),
+  ('app-cp-002', 'inst-cp-002', 'usr-applicant-delhi-cp2', 're-verification', 'verified', 'usr-lmo-1', NULL, '2024-03-10T09:00:00Z', '2024-03-15T14:00:00Z', ARRAY[]::TEXT[], ARRAY[]::TEXT[], 'Periodic commercial dispenser verification.')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Certificates
 INSERT INTO public.certificates (id, application_id, certificate_number, qr_code_data, issue_date, expiry_date, status, issuing_officer_name, issuing_authority, verification_fee_receipt, seal_identification_tag)
 VALUES
   ('cert-001', 'app-2025-001', 'IND-LM-2025-0482', '/verify/IND-LM-2025-0482', '2025-02-15', '2027-02-14', 'active', 'S. K. Sharma (Inspector LM-II)', 'Legal Metrology Department, Govt. of Gujarat', 'REC-2025-8841 (₹ 250 Paid)', 'SEAL-LM-AHM-98442'),
-  ('cert-002', 'app-2025-002', 'IND-LM-2025-1190', '/verify/IND-LM-2025-1190', '2025-09-28', '2026-09-27', 'active', 'S. K. Sharma (Inspector LM-II)', 'Legal Metrology Department, Govt. of Gujarat', 'REC-2025-9921 (₹ 4,000 Paid)', 'LEAD-SEAL-WB-2025-012')
+  ('cert-002', 'app-2025-002', 'IND-LM-2025-1190', '/verify/IND-LM-2025-1190', '2025-09-28', '2026-09-27', 'active', 'S. K. Sharma (Inspector LM-II)', 'Legal Metrology Department, Govt. of Gujarat', 'REC-2025-9921 (₹ 4,000 Paid)', 'LEAD-SEAL-WB-2025-012'),
+  ('cert-cp-001', 'app-cp-001', 'IND-DL-2024-00918', '/verify/IND-DL-2024-00918', '2024-02-28', '2025-02-27', 'expired', 'Anil Kumar (LMO Central Delhi)', 'Legal Metrology Department, Govt. of NCT of Delhi', 'REC-DL-2024-819 (₹ 500 Paid)', 'LEAD-SEAL-DL-CP-918'),
+  ('cert-cp-002', 'app-cp-002', 'IND-DL-2024-00441', '/verify/IND-DL-2024-00441', '2024-03-15', '2025-03-14', 'expired', 'Anil Kumar (LMO Central Delhi)', 'Legal Metrology Department, Govt. of NCT of Delhi', 'REC-DL-2024-992 (₹ 2,000 Paid)', 'LEAD-SEAL-DL-CP-441')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Verification Records
 INSERT INTO public.verification_records (id, application_id, officer_id, verification_date, observations, result, remarks, certificate_id)
 VALUES
   ('rec-001', 'app-2025-001', 'usr-lmo-1', '2025-02-15', '{"visualInspectionPassed": true, "sealIntegrityPassed": true, "errorWithinMPE": true, "stampingCompleted": true, "testedLoadPoints": "Tested at 5kg, 10kg, 20kg, and 30kg full span.", "measuredErrorMargin": "±0.002 kg (Well within allowed MPE of ±0.005 kg)"}'::jsonb, 'pass', 'Instrument verified in presence of applicant. Digital seal tag affixed. Stamping completed as per Rule 14.', 'cert-001'),
-  ('rec-002', 'app-2025-002', 'usr-lmo-1', '2025-09-28', '{"visualInspectionPassed": true, "sealIntegrityPassed": true, "errorWithinMPE": true, "stampingCompleted": true, "testedLoadPoints": "Load test conducted using 20 MT calibrated cast iron weights + substitution test to 50 MT.", "measuredErrorMargin": "±5 kg on 50,000 kg (Allowed MPE is ±10 kg)"}'::jsonb, 'pass', 'Weighbridge platform condition satisfactory. Load cells calibrated. Lead wire seal locked.', 'cert-002')
+  ('rec-002', 'app-2025-002', 'usr-lmo-1', '2025-09-28', '{"visualInspectionPassed": true, "sealIntegrityPassed": true, "errorWithinMPE": true, "stampingCompleted": true, "testedLoadPoints": "Load test conducted using 20 MT calibrated cast iron weights + substitution test to 50 MT.", "measuredErrorMargin": "±5 kg on 50,000 kg (Allowed MPE is ±10 kg)"}'::jsonb, 'pass', 'Weighbridge platform condition satisfactory. Load cells calibrated. Lead wire seal locked.', 'cert-002'),
+  ('rec-cp-001', 'app-cp-001', 'usr-lmo-1', '2024-02-28', '{"visualInspectionPassed": true, "sealIntegrityPassed": true, "errorWithinMPE": true, "stampingCompleted": true, "testedLoadPoints": "Class II standard weights: 10g, 50g, 100g, 200g span.", "measuredErrorMargin": "±0.2 mg on 200 g (Allowed MPE is ±1 mg)"}'::jsonb, 'pass', 'Initial verification certificate issued for bullion scale. Mandatory annual re-verification expired on 27 Feb 2025.', 'cert-cp-001')
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Notifications

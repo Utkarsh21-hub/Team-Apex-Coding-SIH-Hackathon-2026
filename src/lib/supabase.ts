@@ -146,7 +146,7 @@ export async function seedSupabaseTables(sampleData: {
     if (pErr) throw new Error(`Profiles seed failed: ${pErr.message}`);
 
     // 2. Instruments
-    const dbInstruments = sampleData.instruments.map((i) => ({
+    const dbInstrumentsWithGis = sampleData.instruments.map((i) => ({
       id: i.id,
       owner_id: i.owner_id,
       instrument_type: i.instrument_type,
@@ -157,8 +157,28 @@ export async function seedSupabaseTables(sampleData: {
       accuracy_class: i.accuracy_class,
       location: i.location,
       registered_at: i.registered_at,
+      latitude: i.latitude ?? null,
+      longitude: i.longitude ?? null,
+      pincode: i.pincode ?? null,
     }));
-    const { error: iErr } = await supabase.from('instruments').upsert(dbInstruments, { onConflict: 'id' });
+    let { error: iErr } = await supabase.from('instruments').upsert(dbInstrumentsWithGis, { onConflict: 'id' });
+    if (iErr && (iErr.code === 'PGRST204' || iErr.message.includes('latitude') || iErr.message.includes('pincode'))) {
+      // Fallback for tables without GIS columns: omit latitude/longitude/pincode
+      const dbInstrumentsStandard = sampleData.instruments.map((i) => ({
+        id: i.id,
+        owner_id: i.owner_id,
+        instrument_type: i.instrument_type,
+        make: i.make,
+        model: i.model,
+        serial_number: i.serial_number,
+        capacity: i.capacity,
+        accuracy_class: i.accuracy_class,
+        location: i.location,
+        registered_at: i.registered_at,
+      }));
+      const res = await supabase.from('instruments').upsert(dbInstrumentsStandard, { onConflict: 'id' });
+      iErr = res.error;
+    }
     if (iErr) throw new Error(`Instruments seed failed: ${iErr.message}`);
 
     // 3. Applications

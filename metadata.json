@@ -1,6 +1,6 @@
 {
   "name": "VerifyMetro",
   "description": "Digital verification and certification system for weighing and measuring instruments under India's Legal Metrology Act, 2009.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

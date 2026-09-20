@@ -13,6 +13,7 @@ import {
   ClipboardList,
   CheckCircle2,
   ExternalLink,
+  MapPin,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,6 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const officerLinks = [
     { to: '/queue', label: 'Verification Queue', icon: ClipboardList },
+    { to: '/officer/enforcement-map', label: 'GIS Enforcement & Raids', icon: MapPin },
     { to: '/certificates', label: 'Issued Certificates', icon: Award },
     { to: '/notifications', label: 'Officer Alerts', icon: Bell },
     { to: '/profile', label: 'Officer Profile', icon: User },
@@ -41,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const gatcLinks = [
     { to: '/queue', label: 'Lab Testing Queue', icon: ClipboardList },
+    { to: '/officer/enforcement-map', label: 'GIS Enforcement Map', icon: MapPin },
     { to: '/certificates', label: 'Calibration Certificates', icon: Award },
     { to: '/notifications', label: 'Test Requests', icon: Bell },
     { to: '/profile', label: 'Lab Profile', icon: User },
@@ -49,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const adminLinks = [
     { to: '/admin', label: 'System Analytics', icon: LayoutDashboard },
     { to: '/queue', label: 'All Applications', icon: ClipboardList },
+    { to: '/officer/enforcement-map', label: 'GIS Enforcement Map', icon: MapPin },
     { to: '/certificates', label: 'Certificates Ledger', icon: Award },
     { to: '/admin/users', label: 'User Management', icon: Users },
     { to: '/notifications', label: 'System Alerts', icon: Bell },

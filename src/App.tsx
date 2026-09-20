@@ -10,6 +10,7 @@ import { OfficerQueueView } from './views/OfficerQueueView';
 import { AdminDashboardView } from './views/AdminDashboardView';
 import { CertificatesView } from './views/CertificatesView';
 import { NotificationsView } from './views/NotificationsView';
+import { EnforcementMap } from './components/officer/EnforcementMap';
 import { UserRole } from './types';
 
 // Helper component to redirect authenticated users to their role-specific dashboard
@@ -98,6 +99,32 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['lmo', 'admin']}>
                   <OfficerQueueView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/queue"
+              element={
+                <ProtectedRoute allowedRoles={['lmo', 'gatc', 'admin']}>
+                  <OfficerQueueView />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* GIS Enforcement & Expired Certificate Map */}
+            <Route
+              path="/officer/enforcement-map"
+              element={
+                <ProtectedRoute allowedRoles={['lmo', 'gatc', 'admin']}>
+                  <EnforcementMap />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/enforcement-map"
+              element={
+                <ProtectedRoute allowedRoles={['lmo', 'gatc', 'admin']}>
+                  <EnforcementMap />
                 </ProtectedRoute>
               }
             />
