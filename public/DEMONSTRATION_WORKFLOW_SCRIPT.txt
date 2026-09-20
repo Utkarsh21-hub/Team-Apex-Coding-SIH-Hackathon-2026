@@ -1,0 +1,355 @@
+================================================================================
+VERIFYMETRO: COMPLETE SYSTEM DEMONSTRATION SCRIPT & ROLE-BASED WORKFLOWS
+================================================================================
+Standard: Legal Metrology Act, 2009 & Legal Metrology (General) Rules, 2011
+Application Architecture: React 18, TypeScript, Tailwind CSS, Supabase PostgreSQL, GIS Engine
+Roles Covered:
+  1. Instrument Owner (Commercial Applicant / Trader / Industrialist)
+  2. Legal Metrology Officer (LMO / Field Inspector - Gazetted)
+  3. GATC Test Center Staff (Government Approved Test Centre / NABL Lab)
+  4. System Administrator (State Metrology Directorate / Controller)
+================================================================================
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. System Architecture & Demo Personas Overview
+2. Act 1: Instrument Owner (Commercial Applicant) Workflow
+3. Act 2: Legal Metrology Officer (LMO / Field Inspector) Workflow
+4. Act 3: GATC Test Center Staff (NABL Calibration Lab) Workflow
+5. Act 4: System Administrator (State Metrology Directorate) Workflow
+6. Act 5: Consumer & Public Verification Portal
+7. Demonstration Summary & Step-by-Step Execution Matrix
+
+================================================================================
+1. SYSTEM ARCHITECTURE & DEMO PERSONAS OVERVIEW
+================================================================================
+
+The VerifyMetro platform delivers end-to-end digital governance for weights and
+measures, replacing manual record-keeping with real-time cloud synchronization,
+tamper-evident digital certificates, QR-coded lead/wire seal tracking, and GIS-based
+enforcement map intelligence.
+
+DEMO PERSONAS:
+--------------
+1. Instrument Owner:
+   - Ramesh Patel (Owner, Maa Durga Trading & Logistics, Ahmedabad / New Delhi)
+   - Rajesh Chawla (Chawla Bullion & Gems Jewellers, Connaught Place, New Delhi)
+   Mandate: Asset registration with device GPS coordinates, statutory verification
+   applications, document uploads, and digital certificate management.
+
+2. Legal Metrology Officer (LMO):
+   - S. K. Sharma (Senior Legal Metrology Inspector, Inspectorate Zone-II)
+   Mandate: Inspection queue triage, Rule 14 physical testing, Maximum Permissible Error
+   (MPE) calculation, digital seal tag stamping, certificate issuance, and GIS raid enforcement.
+
+3. GATC Test Center Staff:
+   - Dr. Ananya Sen (Head of Metrological Calibration, GATC Lab #07)
+   Mandate: Environmental chamber calibration, NPL-traceable testing for Class I
+   precision balances, moisture meters, and specialized heavy standards.
+
+4. System Administrator:
+   - Vikramaditya Joshi (Joint Controller of Legal Metrology & Directorate Admin)
+   Mandate: Directorate compliance intelligence, inspectorate performance radar,
+   user/role governance, immutable audit trail, and Supabase database synchronization.
+
+
+================================================================================
+2. ACT 1: INSTRUMENT OWNER WORKFLOW (COMMERCIAL APPLICANT)
+================================================================================
+
+SCENE OBJECTIVE:
+Demonstrate how a commercial trader or industrial plant manager registers a newly
+acquired or existing machine, captures exact machine GPS coordinates using the device
+sensors, submits statutory compliance documents, and tracks digital verification.
+
+STEP 1.1: Persona Selection & Compliance Overview
+------------------------------------------------
+- In the top navigation bar, click the Role Switcher and select "Applicant - Ramesh Patel".
+- Navigate to the Applicant Dashboard (/applicant).
+- Demonstration Points:
+  * Compliance Status Cards: Review the high-level counters:
+    - Total Registered Instruments (e.g. 5 assets)
+    - Active Stamped Certificates (e.g. 4 valid units)
+    - Expiring Soon in 30 Days (amber alert for timely re-verification)
+    - Critical Non-Compliant / Expired Units (red indicator)
+  * Statutory Warning Banner: Explains Section 24 compliance mandates and warns of
+    seizure liabilities under the Legal Metrology Act, 2009 for using unstamped units.
+  * Live Application Timeline: Displays real-time progress of submitted requests
+    (Submitted -> Scheduled -> In Progress -> Verified / Rejected).
+
+STEP 1.2: Onboarding an Instrument with Exact GPS Coordinates
+-------------------------------------------------------------
+- Click the primary action button: "+ Register Instrument & Apply".
+- The "Register Instrument & Apply for Verification" modal opens.
+- Demonstration Steps:
+  1. Select Mode: Choose "New Instrument Onboarding".
+  2. Input Machine Specifications:
+     - Instrument Type: Commercial Electronic Scale (or Weighbridge / Fuel Dispenser)
+     - Make & Model: Essae-Teraoka DS-215 Electronic Bench Scale
+     - Serial Number: ESS-2026-9941
+     - Capacity & Verification Interval (e): 30 kg, e = 5 g
+     - Accuracy Classification: Class III (Medium Accuracy - Commercial)
+  3. Input Physical Installation & GIS Coordinates:
+     - Premises / Site Address: Shop 18, Commercial Arcade, Inner Circle
+     - Postal PIN Code: Enter "110001" (The built-in GIS engine automatically matches
+       the postal code and pre-loads standard coordinates).
+     - One-Click GPS Button: Click "📍 Use My Current Location".
+       * The browser queries the device's HTML5 Geolocation API.
+       * High-precision Latitude (e.g. 28.632845 N) and Longitude (e.g. 77.219520 E)
+         are captured with instant accuracy feedback (e.g. "±8m accuracy").
+  4. Select Application Type: Initial Verification (New) or Periodic Re-verification.
+  5. Upload Statutory Documents & Photographs:
+     - Upload stamped serial plate photograph.
+     - Upload manufacturer invoice or model approval certificate.
+     - Enter applicant notes: "New bench scale deployed at retail packing station."
+  6. Click "Submit Application".
+- Outcome:
+  * The instrument is immediately written to the database with its exact coordinates.
+  * A new application (e.g. APP-2026-013) is created and queued for inspector scheduling.
+
+STEP 1.3: Managing the Commercial Asset Registry (/instruments)
+--------------------------------------------------------------
+- Navigate to the "Instruments" tab in the sidebar.
+- Demonstration Points:
+  * Filter and search instruments by serial number, make, or location.
+  * Notice the newly registered instrument with its active status.
+  * Examine the green GPS badge on the card:
+    "GPS: 28.6328 N, 77.2195 E (PIN: 110001)"
+  * For instruments approaching expiration, point out the one-click
+    "Apply for Re-Verification" shortcut button that pre-fills all machine specifications.
+
+STEP 1.4: Viewing and Printing Official Digital Certificates (/certificates)
+----------------------------------------------------------------------------
+- Navigate to the "Certificates" tab in the sidebar.
+- Click on an active certificate (e.g. IND-LM-2025-0482).
+- Demonstration Points:
+  * Official Certificate Header: Formatted according to Legal Metrology Rule 14,
+    featuring government seal, state emblems, and statutory watermarks.
+  * Certificate Metadata: Unique Certificate ID, validity period (12 or 24 months),
+    official fee receipt number (REC-2025-8841), and tamper-evident security
+    wire/lead seal tag identifier (SEAL-LM-AHM-98442).
+  * Print & Export: Click "Print / Export PDF" to demonstrate generation of the
+    statutory document required to be displayed at retail premises.
+  * Cryptographic QR Code: Point out the scannable QR code linking to the instant
+    public validation screen (/verify/IND-LM-2025-0482).
+
+
+================================================================================
+3. ACT 2: LEGAL METROLOGY OFFICER (LMO / FIELD INSPECTOR) WORKFLOW
+================================================================================
+
+SCENE OBJECTIVE:
+Demonstrate how an authorized inspector manages verification queues, conducts
+statutory on-site Rule 14 testing, calculates Maximum Permissible Errors (MPE),
+issues cryptographically sealed digital certificates, and conducts GIS raid planning.
+
+STEP 2.1: Inspector Persona & Command Center Overview
+-----------------------------------------------------
+- In the top navigation bar, switch role to "LMO - S. K. Sharma".
+- Navigate to the Officer Command Center (/officer).
+- Demonstration Points:
+  * Inspection Metrics: Applications in queue, inspections scheduled today,
+    certificates stamped this month, and seizure notices served.
+  * Statutory Pendency Tracking: Monitors applications approaching the 48-hour SLA
+    stipulated under Rule 14 of the Legal Metrology Rules.
+
+STEP 2.2: Scheduling and Conducting Technical Verification (/queue)
+-------------------------------------------------------------------
+- Navigate to the "Verification Queue" tab.
+- Demonstration Steps:
+  1. Review pending applications awaiting verification.
+  2. Select an application (e.g. APP-2026-003 or APP-2026-004).
+  3. Inspection Scheduling:
+     - Click "Schedule Inspection".
+     - Pick an inspection date and appointment time.
+     - Assign to self or route to GATC testing lab if it requires precision calibration.
+  4. Conducting Technical Verification (Rule 14 Verification Modal):
+     - Click "Verify & Stamp Instrument".
+     - Technical Checklist & Tolerance Protocol:
+       * Check 1: Visual Inspection & Model Approval Verification passed.
+       * Check 2: Physical Seal & Stamping Plate Integrity verified.
+       * Check 3: Load Point Testing (Recorded at Zero, 1/4, 1/2, and Full Capacity).
+       * Check 4: Maximum Permissible Error (MPE) Validation:
+         Recorded error (+0.002 kg) is within permissible legal limit (±0.005 kg).
+       * Check 5: Security Seal Affiliation: Enter physical lead/wire seal tag ID
+         (e.g. SEAL-DL-2026-8812) and fee receipt number (REC-2026-9921).
+     - Select Final Determination: "PASS (Approved for Stamping)".
+     - Click "Issue Certificate".
+- Outcome:
+  * The application status instantly updates to "verified".
+  * A digital certificate with a QR code and statutory validity window is generated.
+  * The instrument record in the registry updates its expiration date automatically.
+
+STEP 2.3: GIS Enforcement Map & Unannounced Raid Planning (/gis-map)
+--------------------------------------------------------------------
+- Click on the "Enforcement Map" tab in the sidebar.
+- Scenario: Conducting targeted market surveillance in Connaught Place (110001).
+- Demonstration Steps:
+  1. In the search filter bar, enter PIN Code: "110001".
+  2. Set the Enforcement Radius slider to: "5 km".
+  3. Filter by Compliance Status: Select "Expired Only (Critical)".
+  4. Map Intelligence Analysis:
+     * The map centers dynamically on Central Delhi with a high-contrast circular radius.
+     * Red pulsing alert markers identify non-compliant commercial assets:
+       - Marker 1: Chawla Bullion & Gems Jewellers (Lat: 28.6328, Lng: 77.2195).
+         Mettler Toledo Bullion Balance expired on 27 Feb 2025 (Distance: 0.32 km).
+       - Marker 2: Janpath Commercial Fuels & Logistics (Lat: 28.6291, Lng: 77.2180).
+         Wayne Dual Fuel Dispenser expired on 14 Mar 2025 (Distance: 0.45 km).
+  5. Establishment Drawer & Raid Dispatch:
+     * Click on Chawla Bullion on the map.
+     * The Establishment Enforcement Drawer slides open, displaying business owner
+       contact, exact serial number, last certificate reference, and statutory fine exposure.
+     * Click "Schedule Raid / Inspection": Instantly creates a priority unannounced
+       enforcement case under Section 24 of the Legal Metrology Act, dispatching the case
+       directly into the officer's inspection queue.
+
+
+================================================================================
+4. ACT 3: GATC TEST CENTER STAFF (NABL CALIBRATION LAB) WORKFLOW
+================================================================================
+
+SCENE OBJECTIVE:
+Demonstrate the specialized workflow for laboratory-certified precision instruments
+requiring environmentally controlled metrological testing (Class I balances, grain moisture
+analyzers, and bulk flow standards).
+
+STEP 3.1: GATC Persona & Specialized Queue
+------------------------------------------
+- In the top navigation bar, switch role to "GATC - Dr. Ananya Sen".
+- Navigate to the Calibration Queue (/queue).
+- Demonstration Points:
+  * The queue filters high-accuracy instruments routed by state inspectors for laboratory
+    testing (e.g. Dickey-John GAC 2500-UGMA Grain Moisture Analyzer or Sartorius Class I Micro-balance).
+
+STEP 3.2: Laboratory Calibration & Metrological Testing Protocol
+----------------------------------------------------------------
+- Select the assigned GATC application and open the Calibration Protocol.
+- Demonstration Steps:
+  1. Environmental Chamber Controls:
+     - Record chamber ambient temperature (20.0 C ± 0.5 C).
+     - Record relative humidity (50% ± 5%) and barometric pressure (1013.2 hPa).
+  2. NPL Standards Traceability:
+     - Verify reference standard mass set against primary national standards
+       from the National Physical Laboratory (NPL India).
+  3. Metrological Test Sequences:
+     - Repeatability test (10 consecutive weighings at nominal load).
+     - Eccentric loading test (quadrant deviation analysis).
+     - Linearity test across full working envelope.
+  4. Measurement Uncertainty Calculation:
+     - Expanded uncertainty evaluation: U = 0.02 mg (coverage factor k = 2).
+  5. Issue Calibration Report:
+     - Mark report as "Compliant with OIML R-76 / IS-9281".
+     - Click "Complete Lab Verification".
+- Outcome:
+  * The NABL calibration certificate is permanently linked to the instrument dossier.
+  * The state Legal Metrology Department receives the clearance for final stamping release.
+
+
+================================================================================
+5. ACT 4: SYSTEM ADMINISTRATOR (STATE METROLOGY DIRECTORATE) WORKFLOW
+================================================================================
+
+SCENE OBJECTIVE:
+Demonstrate statewide regulatory oversight, inspectorate performance analytics,
+statutory user access control, audit trail governance, and Supabase cloud database synchronization.
+
+STEP 5.1: Administrator Command Center (/admin)
+-----------------------------------------------
+- In the top navigation bar, switch role to "Admin - Vikramaditya Joshi".
+- Navigate to the Directorate Command Center (/admin).
+- Demonstration Points:
+  * Statewide Compliance Intelligence:
+    - Total commercial instruments active across state districts.
+    - Global compliance percentage (e.g. 78.4% compliant, 21.6% due/expired).
+    - Statutory revenue collected from verification fees and compounding penalties.
+  * Inspectorate Performance Radar:
+    - Average verification turnaround time (TAT) per inspectorate division.
+    - Monthly inspection completion rates vs pending backlogs.
+    - Seizure and raid action closure velocity.
+
+STEP 5.2: User & Inspectorate Administration (/users)
+-----------------------------------------------------
+- Click on the "User Management" tab in the sidebar.
+- Demonstration Points:
+  * Unified user directory displaying all active system participants across all roles:
+    Applicants, LMOs, GATC Lab Officers, and Administrators.
+  * Account Management: Toggle user status (Active / Suspended), inspect official
+    jurisdiction zones, phone numbers, and department designations.
+  * Role Provisioning: Add new field inspector profiles or update zonal boundaries.
+
+STEP 5.3: Immutable Statutory Audit Trail (/audit-logs)
+-------------------------------------------------------
+- Click on the "Audit Trail" tab in the sidebar.
+- Demonstration Points:
+  * Review the tamper-evident chronological event log:
+    - Certificate issuance records with timestamp and digital signature hash.
+    - Physical seal tag attachments (e.g. SEAL-LM-AHM-98442).
+    - Status transitions, inspection appointments, and raid order dispatches.
+  * Highlight that every action captures the actor ID, client session trace, and
+    target instrument ID for full judicial defensibility in metrology appellate proceedings.
+
+STEP 5.4: Supabase Cloud Database Health & Sync Controls
+--------------------------------------------------------
+- Point to the cloud status badge in the top navigation bar:
+  "Supabase Connected" with active latency indicator.
+- Click on the cloud status badge or navigate to database settings:
+  * Real-Time Table Monitoring: Checks health of remote PostgreSQL tables:
+    - profiles
+    - instruments
+    - applications
+    - certificates
+    - verification_records
+    - notifications
+  * One-Click "Seed Supabase Tables" Action:
+    - Demonstrates idempotent database provisioning and sample data population
+      (including the Connaught Place 110001 expired bullion balances and fuel pumps).
+  * Hybrid Offline-First Resilience:
+    - Highlights that if network connectivity is interrupted, the application
+      operates without interruption using local encrypted state, auto-syncing when reconnected.
+
+
+================================================================================
+6. ACT 5: CONSUMER & PUBLIC VERIFICATION PORTAL
+================================================================================
+
+SCENE OBJECTIVE:
+Demonstrate how common consumers, commercial buyers, or flying squad officers
+verify seal authenticity without needing an account or login.
+
+STEP 6.1: Public QR Verification (/verify/:certNumber)
+------------------------------------------------------
+- Open a browser tab to /verify/IND-LM-2025-0482 or scan the certificate QR code.
+- Demonstration Points:
+  * Trust Banner: "VERIFIED LEGAL METROLOGY INSTRUMENT - GOVERNMENT OF INDIA".
+  * Verified Details Displayed:
+    - Instrument Make & Serial: Essae-Teraoka DS-215 (SN: ESS-2026-9941)
+    - Accuracy Class & Capacity: Class III, 30 kg, e = 5 g
+    - Commercial Establishment: Maa Durga Trading & Logistics, Ahmedabad
+    - Physical Security Seal Tag ID: SEAL-LM-AHM-98442
+    - Validity Window: Valid through 20 February 2026
+  * Consumer Protection Impact: Eliminates counterfeit stamping plates and protects
+    consumers against fraudulent weight tampering in retail markets.
+
+
+================================================================================
+7. DEMONSTRATION SUMMARY & STEP-BY-STEP EXECUTION MATRIX
+================================================================================
+
+| Step | Stakeholder Role | View / Screen | Demonstration Action & Highlight |
+|---|---|---|---|
+| 1 | Instrument Owner | /applicant | Inspect compliance KPIs, 30-day expiration warnings, and active applications. |
+| 2 | Instrument Owner | Register Modal | Onboard new scale, click "📍 Use My Current Location" for GPS, and submit. |
+| 3 | Instrument Owner | /instruments | Review asset registry with verified GPS coordinates and PIN code badge. |
+| 4 | Instrument Owner | /certificates | View formal certificate, export print PDF, and inspect scannable QR code. |
+| 5 | Legal Metrology Officer | /officer & /queue | Review 48-hour SLA pendency and schedule on-site verification appointment. |
+| 6 | Legal Metrology Officer | Verification Modal | Complete Rule 14 test checklist, verify MPE tolerance, and issue digital certificate. |
+| 7 | Legal Metrology Officer | /gis-map | Search PIN 110001, apply 5km radius, locate expired bullion balance, and dispatch raid. |
+| 8 | GATC Lab Staff | /queue | Perform NABL traceability calibration under controlled chamber conditions. |
+| 9 | System Administrator | /admin & /users | Monitor statewide compliance analytics, inspector TAT, and user accounts. |
+| 10 | System Administrator | /audit-logs | Inspect tamper-evident statutory audit trail and verify Supabase cloud sync. |
+| 11 | General Public | /verify/:id | Scan certificate QR code for instant public verification of machine accuracy. |
+
+================================================================================
+END OF DEMONSTRATION SCRIPT
+================================================================================
