@@ -15,8 +15,8 @@
 A full **7-minute end-to-end narrated video demonstration** walks through every screen, role, and workflow in the platform:
 
 ```
-▶️ Watch the Project Demonstration Video:
-   Located in the repository attachments / root folder.
+▶️ Click the link below to watch the Project Demonstration Video:
+   https://drive.google.com/file/d/1tP5ZLhBb9d6xxoCV2Tb-uPLVv_6YodtQ/view?usp=sharing
    Follow along with the timestamp guide below to explore each role!
 ```
 
